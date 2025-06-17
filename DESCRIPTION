@@ -1,0 +1,39 @@
+Package: colorectal_cancer_survival
+Type: Package
+Title: 대장암 생존 예측 AI 시스템
+Version: 0.1.0
+Date: 2025-06-11
+Authors@R: 
+    person("Your", "Name", email = "your.email@example.com", role = c("aut", "cre"))
+Description: 대장암 환자의 생존 예측을 위한 AI 시스템으로, R 기반의 생존분석 모델과 로컬 LLM을 통합한 의료 상담 시스템을 제공합니다.
+License: MIT
+
+Imports:
+    tidyverse,
+    survival,
+    survminer,
+    flexsurv,
+    randomForest,
+    ranger,
+    xgboost,
+    mlr3,
+    tidymodels,
+    DALEX,
+    iml,
+    survex,
+    shiny,
+    shinydashboard,
+    DT,
+    plotly,
+    VIM,
+    mice,
+    httr,
+    jsonlite
+
+Suggests:
+    readxl,
+    janitor,
+    rms,
+    h2o
+
+Encoding: UTF-8
