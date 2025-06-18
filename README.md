@@ -1,20 +1,21 @@
 # 대장암 생존 예측 AI 프로젝트
 
-[![GitHub license](https://img.shields.io/github/license/yourusername/colorectal-cancer-survival)](https://github.com/yourusername/colorectal-cancer-survival/blob/main/LICENSE)
+[![GitHub license](https://img.shields.io/github/license/bellfollow/Colorectal_cancer_survival_prediction)](https://github.com/bellfollow/Colorectal_cancer_survival_prediction/blob/main/LICENSE)
 
 ## 🎯 프로젝트 개요
 
-대장암 환자의 생존 예측을 위한 AI 시스템으로, R 기반의 생존분석 모델과 로컬 LLM(ollama)을 통합한 의료 상담 시스템을 제공합니다.
+대장암 환자의 생존 예측을 위한 AI 시스템으로, GAN으로 생성된 가상 임상 데이터를 기반으로 R 기반의 생존분석 모델과 로컬 LLM(ollama)을 통합한 의료 상담 시스템을 제공합니다.
 
 ## 📊 데이터셋 정보
 
 ### 데이터셋 개요
 
-- **데이터 목적**: GAN(생성적 적대 신경망)으로 생성된 가상 임상 데이터셋
+- **데이터 출처**: GAN(생성적 적대 신경망)으로 생성된 가상 임상 데이터셋
 - **데이터 분할**:
   - 훈련 데이터: 10,000건
   - 테스트 데이터: 5,000건
 - **변수 수**: 총 52개 변수
+- **데이터셋 설명 문서**: [대장암 합성 데이터셋 정보.md](대장암%20합성%20데이터셋%20정보.md)
 
 ### 주요 변수
 
@@ -45,30 +46,35 @@
   - `shiny`: 웹 대시보드
   - `renv`: 패키지 의존성 관리
   - `httr`: LLM API 통신
+  - `caret`: 머신러닝 모델링
+  - `xgboost`: 부스팅 알고리즘
+  - `randomForest`: 랜덤 포레스트
 
 ## 🚀 설치 및 실행
 
-1. **R 환경 설정**
-```r
-# R 4.3 이상 필요
-# 필수 패키지 설치
-install.packages("renv")
-renv::restore()
-```
-
-2. **LLM 설정**
-```bash
-# ollama 설치
-# Windows용 ollama 설치
-# 의료 특화 모델 다운로드
-ollama pull llama2:7b-chat
-```
-
-3. **Shiny 앱 실행**
+1. **프로젝트 설정**
 ```r
 # 프로젝트 디렉토리로 이동
 setwd("path/to/project")
 
+# 패키지 의존성 복원
+renv::restore()
+```
+
+2. **데이터 전처리**
+```r
+source("pre_process/preprocess_data.R")
+```
+
+3. **모델 학습 및 평가**
+```r
+source("R/03_survival_modeling.R")
+source("R/04_ml_models.R")
+source("R/05_model_evaluation.R")
+```
+
+4. **Shiny 앱 실행**
+```r
 # Shiny 앱 실행
 shiny::runApp("R/shiny_app")
 ```
@@ -80,14 +86,22 @@ shiny::runApp("R/shiny_app")
    - Random Forest
    - XGBoost
    - 앙상블 모델
+   - 모델 성능 평가
 
-2. **시각화 대시보드**
+2. **데이터 전처리**
+   - 결측치 처리
+   - 이상치 탐지 및 처리
+   - 데이터 변환
+   - 피처 엔지니어링
+
+3. **시각화 대시보드**
    - Kaplan-Meier 생존곡선
    - 위험비 Forest Plot
    - Feature Importance
    - ROC Curve
+   - 모델 성능 비교
 
-3. **AI 의료 상담**
+4. **AI 의료 상담**
    - 환자별 맞춤 상담
    - 생존율 해석
    - 치료 권장사항
@@ -99,7 +113,7 @@ MIT License - see [LICENSE](LICENSE) for details
 ## 📁 프로젝트 구조
 
 ```
-암환자_생존율예측/
+Colorectal_cancer_survival_prediction/
 ├── README.md
 ├── R/
 │   ├── 01_data_preparation.R
@@ -112,11 +126,24 @@ MIT License - see [LICENSE](LICENSE) for details
 │       ├── server.R
 │       ├── global.R
 │       └── llm_functions.R
+├── pre_process/
+│   ├── preprocess_data.R
+│   ├── data_cleaning.R
+│   ├── feature_engineering.R
+│   └── data_validation.R
 ├── data/
+│   └── 암임상 라이브러리 합성데이터 train test set(대장암).xlsx
 ├── models/
 ├── plots/
+├── .Rprofile
+├── .Rbuildignore
+├── .RData
+├── .Rhistory
+├── .Rproj.user
 ├── DESCRIPTION
-└── renv/  # 패키지 의존성 관리
+├── renv/
+├── renv.lock
+└── 암환자_생존율예측.Rproj
 ```
 
 ### 각 디렉토리의 목적
@@ -129,8 +156,28 @@ MIT License - see [LICENSE](LICENSE) for details
   - `05_model_evaluation.R`: 모델 평가
   - `shiny_app/`: Shiny 웹 애플리케이션
 
+- `pre_process/`: 데이터 전처리 관련 스크립트
+  - `preprocess_data.R`: 데이터 전처리 주 프로세스
+  - `data_cleaning.R`: 데이터 정제
+  - `feature_engineering.R`: 피처 엔지니어링
+  - `data_validation.R`: 데이터 검증
+
 - `data/`: 원시 데이터 및 전처리된 데이터
 - `models/`: 학습된 모델 저장
 - `plots/`: 생성된 시각화 파일
 - `renv/`: 패키지 의존성 관리
 - `DESCRIPTION`: R 패키지 설명 파일
+- `.Rprofile`: R 프로젝트 설정
+- `.Rbuildignore`: 빌드 시 무시할 파일 설정
+- `.RData`: R 세션 데이터
+- `.Rhistory`: R 명령어 이력
+- `.Rproj.user`: RStudio 프로젝트 설정
+- `renv.lock`: 패키지 의존성 버전 정보
+- `암환자_생존율예측.Rproj`: RStudio 프로젝트 파일
+
+## 📝 관련 문서
+
+- [대장암 합성 데이터셋 정보.md](대장암%20합성%20데이터셋%20정보.md): 데이터셋 상세 설명
+- [process.md](process.md): 프로젝트 프로세스 설명
+- [prob_solv.md](prob_solv.md): 문제 해결 과정 설명
+- [asd.md](asd.md): 추가 설명 문서
