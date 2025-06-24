@@ -11,6 +11,7 @@ library(purrr)      # 함수형 프로그래밍
 library(tibble)     # 데이터프레임 개선
 library(tidyselect) # tidy 선택 도우미
 library(rlang)      # tidy evaluation
+library(mice)       # 다중대치법을 위한 패키지
 
 # 데이터 파일 경로 설정
 train_file <- "pre_process/암임상_라이브러리_합성데이터_train.csv"
@@ -23,60 +24,196 @@ train_data <- read.csv(train_file, fileEncoding = "UTF-8-BOM") %>%
 test_data <- read.csv(test_file, fileEncoding = "UTF-8-BOM") %>%
   filter(진단시연령.AGE. >= 18)
 
+# 결측치 확인
+cat("\n=== 학습 데이터 결측치 요약 ===\n")
+print(colSums(is.na(train_data))[colSums(is.na(train_data)) > 0])
+cat("\n총 결측치가 있는 변수 수:", sum(colSums(is.na(train_data)) > 0), "개\n")
+cat("총 결측치 수:", sum(is.na(train_data)), "개\n")
 
-# 99를 NA로 변환하는 함수
-convert_99_to_na <- function(df) {
-  df[] <- lapply(df, function(x) {
-    if (is.numeric(x)) {
-      x[x == 99] <- NA
-    }
-    return(x)
-  })
-  return(df)
-}
+cat("\n=== 테스트 데이터 결측치 요약 ===\n")
+print(colSums(is.na(test_data))[colSums(is.na(test_data)) > 0])
+cat("\n총 결측치가 있는 변수 수:", sum(colSums(is.na(test_data)) > 0), "개\n")
+cat("총 결측치 수:", sum(is.na(test_data)), "개\n")
+
 
 # 결측치 비율 계산 함수
 calculate_missing_ratio <- function(x) {
   mean(is.na(x))
 }
 
-# 결측치 처리 함수
-handle_missing_values <- function(df) {
-  # TNM stage 변수 목록
-  tnm_cols <- c("T_stage", "N_stage", "M_stage")
-  tnm_cols <- intersect(tnm_cols, names(df))  # 데이터에 있는 TNM 변수만 선택
+# 음주 변수 처리 함수 (99를 0으로 변환)
+handle_drinking_variable <- function(df) {
+  if ("음주종류.Type.of.Drink." %in% names(df)) {
+    cat("\n=== 음주 변수(99)를 0으로 변환 ===\n")
+    df$음주종류.Type.of.Drink.[df$음주종류.Type.of.Drink. == 99] <- 0
+  }
+  return(df)
+}
+
+# 면역병리 및 분자병리 변수에 대한 다중대치법 적용 함수
+impute_molecular_data <- function(df) {
+  # 면역병리 변수
+  immune_vars <- c("면역병리EGFR검사코드.명.EGFR.")
   
-  # TNM stage 변수를 제외한 열들
-  other_cols <- setdiff(names(df), tnm_cols)
+  # 분자병리 변수
+  molecular_vars <- c("분자병리MSI검사결과코드.명.MSI.",
+                     "분자병리KRASMUTATION_EXON2검사결과코드.명.KRASMUTATION_EXON2.",
+                     "분자병리KRASMUTATION검사결과코드.명.KRASMUTATION.",
+                     "분자병리NRASMUTATION검사결과코드.명.NRASMUTATION.",
+                     "분자병리BRAF_MUTATION검사결과코드.명.BRAF_MUTATION.")
   
-  # 99를 NA로 변환 (TNM stage 변수 제외)
-  df[other_cols] <- lapply(df[other_cols], function(x) {
-    if (is.numeric(x)) {
-      x[x == 99] <- NA
-    }
-    return(x)
-  })
+  # 모든 처리할 변수 결합
+  all_vars <- c(immune_vars, molecular_vars)
   
-  # TNM stage 변수는 99를 NA로만 변환
-  if (length(tnm_cols) > 0) {
-    df[tnm_cols] <- lapply(df[tnm_cols], function(x) {
-      if (is.factor(x)) {
-        levels(x)[levels(x) == "99"] <- NA_character_
-      } else if (is.character(x)) {
-        x[x == "99"] <- NA_character_
+  # 데이터에 존재하는 변수만 선택
+  all_vars <- intersect(all_vars, names(df))
+  
+  cat("\n=== 면역병리 및 분자병리 변수 처리 ===\n")
+  cat("발견된 변수:", if(length(all_vars) > 0) paste(all_vars, collapse=", ") else "없음", "\n")
+  
+  if (length(all_vars) > 0) {
+    # 99를 NA로 변환
+    for (var in all_vars) {
+      na_before <- sum(is.na(df[[var]]))
+      df[[var]][df[[var]] == 99] <- NA
+      na_after <- sum(is.na(df[[var]]))
+      if (na_after > na_before) {
+        cat("변환: ", var, "에서 99를 NA로 변환 (", na_after - na_before, "개)\n", sep="")
       }
-      return(x)
-    })
+    }
+    
+    # NA가 있는 변수만 선택
+    vars_with_na <- all_vars[sapply(all_vars, function(x) any(is.na(df[[x]])))]
+    
+    if (length(vars_with_na) > 0) {
+      cat("NA가 있는 변수:", paste(vars_with_na, collapse=", "), "\n")
+      
+      # 데이터 확인 및 변환
+      temp_df <- df[, vars_with_na, drop=FALSE]
+      
+      # 각 변수를 팩터로 변환 (mice가 범주형 변수를 더 잘 처리하도록)
+      for (var in vars_with_na) {
+        if (!is.factor(temp_df[[var]])) {
+          temp_df[[var]] <- as.factor(temp_df[[var]])
+        }
+      }
+      
+      # mice 실행
+      tryCatch({
+        temp_data <- mice::mice(
+          data = temp_df,
+          m = 5,
+          maxit = 5,
+          method = 'pmm',
+          seed = 123,
+          printFlag = FALSE
+        )
+        
+        # 첫 번째 대체 데이터셋 사용
+        imputed_data <- mice::complete(temp_data, 1)
+        
+        # 원래 데이터프레임에 대체된 값 적용
+        for (var in vars_with_na) {
+          df[[var]] <- imputed_data[[var]]
+        }
+        cat("다중대치법 적용 완료\n")
+        
+      }, error = function(e) {
+        cat("다중대치법 적용 중 오류 발생:", e$message, "\n")
+        cat("대신 중앙값/최빈값으로 대체합니다.\n")
+        
+        # 오류 발생 시 각 변수별로 중앙값 또는 최빈값으로 대체
+        for (var in vars_with_na) {
+          if (is.numeric(df[[var]])) {
+            median_val <- median(df[[var]], na.rm = TRUE)
+            df[[var]][is.na(df[[var]])] <- median_val
+          } else {
+            tab <- table(df[[var]])
+            mode_val <- names(which.max(tab))
+            df[[var]][is.na(df[[var]])] <- mode_val
+          }
+        }
+      })
+      
+    } else {
+      cat("결측치가 있는 변수가 없어 다중대치를 건너뜁니다.\n")
+    }
   }
   
-  # 결측치 비율 계산 (TNM stage 변수 제외)
-  missing_ratios <- sapply(df[other_cols], calculate_missing_ratio)
+  return(df)
+}
+
+# 결측치 처리 함수
+handle_missing_values <- function(df) {
+  # 1. 음주 변수 처리 (99를 0으로 변환)
+  if ("음주종류.Type.of.Drink." %in% names(df)) {
+    cat("\n=== 음주 변수 처리 전 ===\n")
+    print(table(df$`음주종류.Type.of.Drink.`, useNA = 'always'))
+  }
   
-  # 50% 이상 결측치가 있는 변수 제거 (TNM stage 변수 제외)
-  high_missing_cols <- names(missing_ratios[missing_ratios >= 0.5])
-  if (length(high_missing_cols) > 0) {
-    # TNM stage 변수가 high_missing_cols에 포함되어 있는지 확인하고 제외
-    high_missing_cols <- setdiff(high_missing_cols, tnm_cols)
+  df <- handle_drinking_variable(df)
+  
+  if ("음주종류.Type.of.Drink." %in% names(df)) {
+    cat("\n=== 음주 변수 처리 후 ===\n")
+    print(table(df$`음주종류.Type.of.Drink`, useNA = 'always'))
+  }
+  
+  # 2. 면역병리 및 분자병리 변수에 다중대치법 적용
+  molecular_vars <- c("분자병리MSI검사결과코드.명.MSI.", 
+                     "분자병리KRASMUTATION_EXON2검사결과코드.명.KRASMUTATION_EXON2.",
+                     "분자병리KRASMUTATION검사결과코드.명.KRASMUTATION.",
+                     "분자병리NRASMUTATION검사결과코드.명.NRASMUTATION.",
+                     "분자병리BRAF_MUTATION검사결과코드.명.BRAF_MUTATION.")
+  
+  cat("\n=== 분자병리 변수 처리 전 (99/NA 개수) ===\n")
+  for (var in molecular_vars) {
+    if (var %in% names(df)) {
+      cat(var, ": 99 =", sum(df[[var]] == 99, na.rm = TRUE), 
+          ", NA =", sum(is.na(df[[var]])), "\n")
+    }
+  }
+  
+  df <- impute_molecular_data(df)
+  
+  cat("\n=== 분자병리 변수 처리 후 (NA 개수) ===\n")
+  for (var in molecular_vars) {
+    if (var %in% names(df)) {
+      cat(var, ": NA =", sum(is.na(df[[var]])), "\n")
+    }
+  }
+  
+  # 면역병리 및 분자병리 변수 목록
+  immune_vars <- c("면역병리EGFR검사코드.명.EGFR.")
+  molecular_vars <- c(
+    "분자병리MSI검사결과코드.명.MSI.",
+    "분자병리KRASMUTATION_EXON2검사결과코드.명.KRASMUTATION_EXON2.",
+    "분자병리KRASMUTATION검사결과코드.명.KRASMUTATION.",
+    "분자병리NRASMUTATION검사결과코드.명.NRASMUTATION.",
+    "분자병리BRAF_MUTATION검사결과코드.명.BRAF_MUTATION."
+  )
+  
+  # 모든 처리할 변수 결합
+  protected_vars <- c(immune_vars, molecular_vars)
+  
+  # 데이터에 존재하는 변수만 선택
+  protected_vars <- intersect(protected_vars, names(df))
+  
+  # TNM stage 변수 목록
+  tnm_cols <- c("T_stage", "N_stage", "M_stage")
+  tnm_cols <- intersect(tnm_cols, names(df))
+  
+  # 보호할 변수들 (TNM stage + 면역/분자병리 변수)
+  protected_cols <- unique(c(tnm_cols, protected_vars))
+  
+  # 보호할 변수를 제외한 열들
+  other_cols <- setdiff(names(df), protected_cols)
+  
+  # 결측치 비율 계산 (보호 변수 제외)
+  if (length(other_cols) > 0) {
+    missing_ratios <- sapply(df[other_cols], calculate_missing_ratio)
+    
+    # 50% 이상 결측치가 있는 변수 제거 (보호 변수는 제외)
+    high_missing_cols <- names(missing_ratios[missing_ratios >= 0.5])
     if (length(high_missing_cols) > 0) {
       cat("\n=== 결측치 50% 이상인 변수 제거 (총 ", length(high_missing_cols), "개) ===\n", sep="")
       print(high_missing_cols)
@@ -152,7 +289,7 @@ process_tnm_stage <- function(df) {
     df$T_stage <- apply(df[t_cols], 1, function(x) {
       # 1이 있는 컬럼 찾기
       active_cols <- t_cols[!is.na(x) & x == 1]
-      if (length(active_cols) == 0) return(NA_character_)
+      if (length(active_cols) == 0) return("T0")  # 결측치를 T0로 대체
       
       # 병기명 추출
       stages <- gsub("병기STAGE\\.(T[0-4][a-z]*|Tis)\\.?", "\\1", active_cols)
@@ -184,7 +321,7 @@ process_tnm_stage <- function(df) {
   if (length(n_cols) > 0) {
     df$N_stage <- apply(df[n_cols], 1, function(x) {
       active_cols <- n_cols[!is.na(x) & x == 1]
-      if (length(active_cols) == 0) return(NA_character_)
+      if (length(active_cols) == 0) return("N0")  # 결측치를 N0로 대체
       
       stages <- gsub("병기STAGE\\.(N[0-3][a-z]*)\\.?", "\\1", active_cols)
       
@@ -213,7 +350,7 @@ process_tnm_stage <- function(df) {
   if (length(m_cols) > 0) {
     df$M_stage <- apply(df[m_cols], 1, function(x) {
       active_cols <- m_cols[!is.na(x) & x == 1]
-      if (length(active_cols) == 0) return(NA_character_)
+      if (length(active_cols) == 0) return("M0")  # 결측치를 M0로 대체
       
       stages <- gsub("병기STAGE\\.(M[01][a-z]*)\\.?", "\\1", active_cols)
       
@@ -245,12 +382,6 @@ train_data <- process_tnm_stage(train_data)
 cat("\n=== 테스트 데이터 TNM 병기 처리 ===")
 test_data <- process_tnm_stage(test_data)
 
-# 학습 및 테스트 데이터에서 0으로만 구성된 변수 제거
-cat("\n=== 학습 데이터에서 0으로만 구성된 변수 제거 ===")
-train_data <- remove_zero_vars(train_data)
-
-cat("\n=== 테스트 데이터에서 0으로만 구성된 변수 제거 ===")
-test_data <- remove_zero_vars(test_data)
 
 # 결측치 처리 (99를 NA로 변환 및 결측치 처리)
 cat("\n=== 학습 데이터 결측치 처리 ===")
