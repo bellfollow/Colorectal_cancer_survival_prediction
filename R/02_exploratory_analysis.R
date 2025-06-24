@@ -9,9 +9,11 @@
 # 4. 생존 분석
 
 # 필요한 패키지 로드
+library(dplyr)
 library(survival)
 library(survminer)
 library(corrplot)
+library(ggplot2)
 
 # 데이터 로드 및 기본 정보 출력
 data <- read.csv("pre_process/암임상_라이브러리_합성데이터_train.csv")
@@ -147,7 +149,7 @@ analyze_stage_survival <- function(data) {
             print(summary(surv_fit))
             
             # ggsurvplot을 사용한 향상된 플롯
-            ggsurvplot(
+            surv_plot <- ggsurvplot(
               surv_fit,
               data = data,
               conf.int = TRUE,
@@ -157,6 +159,7 @@ analyze_stage_survival <- function(data) {
               xlab = "생존 시간 (일)",
               ylab = "생존 확률"
             )
+            print(surv_plot)
           }
         } else {
           cat("\n", stage, "변수에 유효한 값이 없습니다.\n")
@@ -200,7 +203,7 @@ analyze_survival <- function(data) {
     print(summary(surv_fit))
     
     # ggsurvplot을 사용한 향상된 플롯
-    ggsurvplot(
+    surv_plot <- ggsurvplot(
       surv_fit,
       data = data,
       conf.int = TRUE,
@@ -210,6 +213,7 @@ analyze_survival <- function(data) {
       xlab = "생존 시간 (일)",
       ylab = "생존 확률"
     )
+    print(surv_plot)
   }
 }
 analyze_survival(data)
