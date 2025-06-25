@@ -10,8 +10,8 @@ library(broom)        # 모델 결과 정리를 위한 패키지
 
 # 데이터 로드 (상대 경로 사용)
 cat("데이터 로드 중...\n")
-eocrc_data <- read.csv("data/1_train_EOCRC.csv", fileEncoding = "UTF-8-BOM")
-locrc_data <- read.csv("data/1_train_LOCRC.csv", fileEncoding = "UTF-8-BOM")
+eocrc_data <- read.csv("data/train_EOCRC.csv", fileEncoding = "UTF-8-BOM")
+locrc_data <- read.csv("data/train_LOCRC.csv", fileEncoding = "UTF-8-BOM")
 
 # 생존 시간(일)을 연 단위로 변환 (선택사항)
 # eocrc_data$Survival.years <- eocrc_data$암진단후생존일수.Survival.period. / 365.25

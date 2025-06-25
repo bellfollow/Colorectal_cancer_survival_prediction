@@ -75,3 +75,155 @@ print(names(data))
         - 논문에서도 분자병리 마커는 중요한 예후 인자로 사용되므로 정확한 처리 필요
 4. 99를 모두 0으로 바꾸려고보니 음주 부분은 0으로 바꿔도 문제가 없을것 같았지만 나머지가 문제였다.
 - 논문 기반으로 진행하는 것이라 논문 기중에 맞추고 NA로 바꾸고 다중대치법 적용함함
+
+## 단변량 분석 결과
+```
+===  EOCRC 그룹 단변량 Cox 회귀 분석 ===
+
+[전체 변수 분석 결과]
+
+
+              Variable                                                             HR   CI_lower   CI_upper   p_value
+------------  --------------------------------------------------------------  -------  ---------  ---------  --------
+lower .952    조직학적진단명.코드.설명.signet.ring.cell.                        1.284      1.021      1.614     0.033
+lower .957    조직학적진단명.코드.설명.Neoplasm.malignant.                      1.184      0.943      1.485     0.145
+lower .9511   체중측정값.Weight.                                                0.995      0.989      1.002     0.152
+lower .954    조직학적진단명.코드.설명.carcinoide.tumor.                        1.165      0.924      1.470     0.197
+lower .9519   항암제.치료.여부.Chemotherapy.                                    0.849      0.660      1.092     0.202
+lower .953    조직학적진단명.코드.설명.adenocarcinoma.                          0.882      0.711      1.094     0.253
+lower .958    음주종류.Type.of.Drink.                                           1.045      0.968      1.127     0.262
+lower .9512   면역병리EGFR검사코드.명.EGFR.                                     0.915      0.775      1.081     0.297
+lower .9517   분자병리BRAF_MUTATION검사결과코드.명.BRAF_MUTATION.               0.935      0.789      1.107     0.434
+lower .9523   M_stage                                                           0.937      0.793      1.107     0.442
+lower .951    조직학적진단명.코드.설명.mucinous.                                1.092      0.870      1.369     0.449
+lower .9515   분자병리KRASMUTATION검사결과코드.명.KRASMUTATION.                 0.948      0.803      1.120     0.531
+lower .9518   대장암.수술.여부.Operation.                                       0.945      0.781      1.143     0.560
+lower .956    조직학적진단명.코드.설명.squamous.cell.carcinoma.                 1.061      0.829      1.357     0.638
+lower .9510   신장값.Height.                                                    1.002      0.994      1.009     0.650
+lower .9514   분자병리KRASMUTATION_EXON2검사결과코드.명.KRASMUTATION_EXON2.     1.034      0.875      1.222     0.692
+lower .959    흡연여부.Smoke.                                                   1.016      0.905      1.142     0.783
+lower .9516   분자병리NRASMUTATION검사결과코드.명.NRASMUTATION.                 1.019      0.863      1.204     0.824
+lower .9522   N_stage                                                          -0.151      0.809      1.168     0.860
+lower .9520   방사선치료.여부.Radiation.Therapy.                                1.015      0.805      1.281     0.899
+lower .955    조직학적진단명.코드.설명.Neuroendocrine.carcinoma.                1.012      0.789      1.298     0.927
+lower .9513   분자병리MSI검사결과코드.명.MSI.                                   0.997      0.909      1.094     0.951
+lower .95     진단시연령.AGE.                                                   1.000      0.990      1.011     0.954
+lower .9521   T_stage                                                           0.032      0.819      1.316     1.038
+
+[유의미한 변수 (p < 0.05)]
+
+
+             Variable                                         HR   CI_lower   CI_upper   p_value
+-----------  -------------------------------------------  ------  ---------  ---------  --------
+lower .952   조직학적진단명.코드.설명.signet.ring.cell.    1.284      1.021      1.614     0.033
+
+유의미한 범주형 변수에 대한 생존곡선을 그립니다...
+> # LOCRC 그룹 분석
+> locrc_results <- perform_univariate_analysis(locrc_data, "LOCRC")
+
+===  LOCRC 그룹 단변량 Cox 회귀 분석 ===
+
+[전체 변수 분석 결과]
+
+
+              Variable                                                            HR   CI_lower   CI_upper   p_value
+------------  --------------------------------------------------------------  ------  ---------  ---------  --------
+lower .9511   체중측정값.Weight.                                               1.004      1.000      1.008     0.045
+lower .955    조직학적진단명.코드.설명.Neuroendocrine.carcinoma.               1.156      0.986      1.354     0.074
+lower .9513   분자병리MSI검사결과코드.명.MSI.                                  0.952      0.893      1.013     0.122
+lower .954    조직학적진단명.코드.설명.carcinoide.tumor.                       1.128      0.960      1.327     0.144
+lower .95     진단시연령.AGE.                                                  0.996      0.991      1.001     0.156
+lower .9523   M_stage                                                          1.085      0.969      1.215     0.157
+lower .9519   항암제.치료.여부.Chemotherapy.                                   1.100      0.942      1.286     0.228
+lower .9518   대장암.수술.여부.Operation.                                      0.928      0.815      1.055     0.254
+lower .958    음주종류.Type.of.Drink.                                          1.030      0.977      1.086     0.272
+lower .9510   신장값.Height.                                                   1.003      0.998      1.008     0.275
+lower .9516   분자병리NRASMUTATION검사결과코드.명.NRASMUTATION.                1.057      0.944      1.183     0.337
+lower .9517   분자병리BRAF_MUTATION검사결과코드.명.BRAF_MUTATION.              1.039      0.928      1.165     0.506
+lower .953    조직학적진단명.코드.설명.adenocarcinoma.                         1.052      0.900      1.231     0.524
+lower .9514   분자병리KRASMUTATION_EXON2검사결과코드.명.KRASMUTATION_EXON2.    0.967      0.864      1.083     0.566
+lower .9520   방사선치료.여부.Radiation.Therapy.                               1.042      0.890      1.220     0.608
+lower .959    흡연여부.Smoke.                                                  1.020      0.941      1.105     0.632
+lower .9512   면역병리EGFR검사코드.명.EGFR.                                    0.974      0.870      1.090     0.641
+lower .9515   분자병리KRASMUTATION검사결과코드.명.KRASMUTATION.                1.025      0.916      1.147     0.667
+lower .956    조직학적진단명.코드.설명.squamous.cell.carcinoma.                1.029      0.870      1.217     0.740
+lower .952    조직학적진단명.코드.설명.signet.ring.cell.                       0.976      0.828      1.150     0.771
+lower .957    조직학적진단명.코드.설명.Neoplasm.malignant.                     1.016      0.861      1.200     0.847
+lower .951    조직학적진단명.코드.설명.mucinous.                               1.015      0.867      1.189     0.851
+lower .9521   T_stage                                                          0.009      0.766      1.059     0.901
+lower .9522   N_stage                                                          0.080      0.940      1.211     1.083
+
+[유의미한 변수 (p < 0.05)]
+
+
+              Variable                 HR   CI_lower   CI_upper   p_value
+------------  -------------------  ------  ---------  ---------  --------
+lower .9511   체중측정값.Weight.    1.004          1      1.008     0.045
+
+```
+- 우리나라 대장암의 발병률 양상과 위험인자에 대한 연구 라는 이름의 [우리나라 대장암의 발병률 양상과
+위험인자에 대한 연구](https://repository.nhimc.or.kr/bitstream/2023.oak/208/2/2017-20-004.pdf) 
+    - "앞서 분석한 단변량 분석결과에서 대장암 발생에 유의한 요인으로 선정된 변수들과 기존문헌에서 조사된 요인들을 모두 혼합하여 다변량 분석을 실시하였다." 를 기준으로 진행하겠다.
+
+- 일단은 다변량도 시도해보겠다
+
+## 다변량 분석
+- 단변량 분석은 ```surv(생존일수 ,사망여부) ~ 하나의 변수``` 이런식으로 해결됐다면
+- 다변량은 ```surv(생존일수 ,사망여부) ~ 여러개의 변수``` 이런식으로 해결된다
+```
+ [1] "순번.No."
+ [2] "진단시연령.AGE."
+ [3] "조직학적진단명.코드.설명.mucinous."
+ [4] "조직학적진단명.코드.설명.signet.ring.cell."
+ [5] "조직학적진단명.코드.설명.adenocarcinoma."
+ [6] "조직학적진단명.코드.설명.carcinoide.tumor."
+ [7] "조직학적진단명.코드.설명.Neuroendocrine.carcinoma."
+ [8] "조직학적진단명.코드.설명.squamous.cell.carcinoma."
+ [9] "조직학적진단명.코드.설명.Neoplasm.malignant."
+[10] "음주종류.Type.of.Drink."
+[11] "흡연여부.Smoke."
+[12] "신장값.Height."
+[13] "체중측정값.Weight."
+[14] "면역병리EGFR검사코드.명.EGFR."
+[15] "분자병리MSI검사결과코드.명.MSI."
+[16] "분자병리KRASMUTATION_EXON2검사결과코드.명.KRASMUTATION_EXON2."
+[17] "분자병리KRASMUTATION검사결과코드.명.KRASMUTATION."
+[18] "분자병리NRASMUTATION검사결과코드.명.NRASMUTATION."
+[19] "분자병리BRAF_MUTATION검사결과코드.명.BRAF_MUTATION."
+[20] "대장암.수술.여부.Operation."
+[21] "항암제.치료.여부.Chemotherapy."
+[22] "방사선치료.여부.Radiation.Therapy."
+[23] "사망여부.Death."
+[24] "암진단후생존일수.Survival.period."
+[25] "T_stage"
+[26] "N_stage"
+[27] "M_stage"
+[28] "cancer_type"
+```
+- 다변량에서 제외할 변수는 순번, cancer_type 이다. 2개 빠짐
+- 진단명도 필요하다 생각함, 단변량에서 유의미한 변수였음, EOCRC에서는 유일하게 p < 0.05를 만족하는 변수였고, LOCRC에서는 아쉽게도 만족하지 못한 변수였다. 외국의 사레에서는 보수적으로 P < 0.25까지 포함한다고 친다면 (현재 프로젝트의 데이터 수의 부족이므로)
+- EOCRC에서는 
+```
+lower .952    조직학적진단명.코드.설명.signet.ring.cell.                        1.284      1.021      1.614     0.033
+lower .957    조직학적진단명.코드.설명.Neoplasm.malignant.                      1.184      0.943      1.485     0.145
+lower .9511   체중측정값.Weight.                                                0.995      0.989      1.002     0.152
+lower .954    조직학적진단명.코드.설명.carcinoide.tumor.                        1.165      0.924      1.470     0.197
+lower .9519   항암제.치료.여부.Chemotherapy.                                    0.849      0.660      1.092     0.202
+```
+- 가 해당될 것이고
+- LOCRC에서는 
+```
+              Variable                                                            HR   CI_lower   CI_upper   p_value
+------------  --------------------------------------------------------------  ------  ---------  ---------  --------
+lower .9511   체중측정값.Weight.                                               1.004      1.000      1.008     0.045
+lower .955    조직학적진단명.코드.설명.Neuroendocrine.carcinoma.               1.156      0.986      1.354     0.074
+lower .9513   분자병리MSI검사결과코드.명.MSI.                                  0.952      0.893      1.013     0.122
+lower .954    조직학적진단명.코드.설명.carcinoide.tumor.                       1.128      0.960      1.327     0.144
+lower .95     진단시연령.AGE.                                                  0.996      0.991      1.001     0.156
+lower .9523   M_stage                                                          1.085      0.969      1.215     0.157
+lower .9519   항암제.치료.여부.Chemotherapy.                                   1.100      0.942      1.286     0.228
+```
+- 일것이다.
+
+- 다변량 분석을 시행해 p < 0.25 로 다시 진행할지, 아님 독립 예후인자로 뽑을지 결정해보자
+
