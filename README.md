@@ -1,21 +1,37 @@
-# 대장암 생존 예측 AI 프로젝트
+# 대장암 생존 예측 AI 프로젝트 (EOCRC/LOCRC)
 
 [![GitHub license](https://img.shields.io/github/license/bellfollow/Colorectal_cancer_survival_prediction)](https://github.com/bellfollow/Colorectal_cancer_survival_prediction/blob/main/LICENSE)
 
 ## 🎯 프로젝트 개요
 
-대장암 환자의 생존 예측을 위한 AI 시스템으로, GAN으로 생성된 가상 임상 데이터를 기반으로 R 기반의 생존분석 모델과 로컬 LLM(ollama)을 통합한 의료 상담 시스템을 제공합니다.
+대장암 환자의 생존 예측을 위한 분석 시스템으로, 조기발병 대장암(EOCRC)과 만기발병 대장암(LOCRC) 그룹별로 생존 예측 모델을 개발했습니다. R을 사용한 생존 분석과 다변량 분석을 통해 주요 예후 인자를 규명하고, 모델 성능을 평가했습니다.
 
-## 📊 데이터셋 정보
+## 📊 분석 결과 요약
 
-### 데이터셋 개요
+### 주요 발견사항
+
+#### EOCRC (Early-Onset Colorectal Cancer)
+- **유의한 예후인자**: 
+  - 시그넷링세포암 (p=0.042, HR=1.27)
+- **모델 성능**: C-index = 0.551
+
+#### LOCRC (Late-Onset Colorectal Cancer)
+- **유의한 예후인자**:
+  - 체중 (p=0.037, HR=1.004)
+- **모델 성능**: C-index = 0.536
+
+### 데이터셋 정보
 
 - **데이터 출처**: GAN(생성적 적대 신경망)으로 생성된 가상 임상 데이터셋
 - **데이터 분할**:
-  - 훈련 데이터: 10,000건
-  - 테스트 데이터: 5,000건
-- **변수 수**: 총 52개 변수
-- **데이터셋 설명 문서**: [대장암 합성 데이터셋 정보.md](대장암%20합성%20데이터셋%20정보.md)
+  - EOCRC: 1,000건
+  - LOCRC: 1,000건
+- **주요 변수**: 
+  - 생존 시간(일)
+  - 사망 여부
+  - 임상적 병기
+  - 조직학적 유형
+  - 치료 방법 등
 
 ### 주요 변수
 
@@ -40,75 +56,74 @@
 ## 🛠 기술 스택
 
 - **언어**: R 100%
-- **패키지**:
+- **주요 패키지**:
+  - `survival`: 생존 분석
+  - `survminer`: 생존 분석 시각화
   - `tidyverse`: 데이터 처리 및 시각화
-  - `survival`: 생존분석
-  - `shiny`: 웹 대시보드
-  - `renv`: 패키지 의존성 관리
-  - `httr`: LLM API 통신
-  - `caret`: 머신러닝 모델링
-  - `xgboost`: 부스팅 알고리즘
-  - `randomForest`: 랜덤 포레스트
+  - `car`: 다중공선성 검정
+  - `knitr`: 보고서 생성
+  - `broom`: 모델 결과 정리
 
-## 🚀 설치 및 실행
+## 📈 분석 방법론
 
-1. **프로젝트 설정**
+1. **단변량 분석**
+   - 각 변수별 Cox 비례위험모델 적합
+   - p-value < 0.25 기준으로 유의변수 선정
+
+2. **다변량 분석**
+   - 단변량에서 선정된 변수로 다변량 모델 구축
+   - 모델 적합도 검정 (Likelihood ratio test)
+   - Harrell's C-index로 예측력 평가
+   - VIF를 통한 다중공선성 검정
+
+## 🚀 분석 실행 방법
+
+1. **필요 패키지 설치**
 ```r
-# 프로젝트 디렉토리로 이동
-setwd("path/to/project")
-
-# 패키지 의존성 복원
-renv::restore()
+install.packages(c("tidyverse", "survival", "survminer", "knitr", "broom", "car"))
 ```
 
-2. **데이터 전처리**
+2. **분석 스크립트 실행**
 ```r
-source("pre_process/preprocess_data.R")
+# 단변량 분석
+source("R/02_02_exploratory_analysis.R")
+
+# 다변량 분석
+source("R/02_03_exploratory_analysis.R")
 ```
 
-3. **모델 학습 및 평가**
-```r
-source("R/03_survival_modeling.R")
-source("R/04_ml_models.R")
-source("R/05_model_evaluation.R")
+3. **결과 확인**
+- 분석 결과는 콘솔에 출력되며, 상세 내용은 `docs/survival_analysis_documentation.md`에서 확인 가능
+
+## 📂 프로젝트 구조
+
+```
+Colorectal_cancer_survival_prediction/
+├── R/
+│   ├── 02_02_exploratory_analysis.R  # 단변량 분석
+│   └── 02_03_exploratory_analysis.R  # 다변량 분석
+├── data/
+│   ├── 1_train_EOCRC.csv            # EOCRC 학습 데이터
+│   └── 1_train_LOCRC.csv            # LOCRC 학습 데이터
+├── docs/
+│   ├── survival_analysis_documentation.md  # 상세 분석 결과
+│   └── data_preparation_README.md   # 데이터 전처리 문서
+└── README.md                        # 현재 파일
 ```
 
-4. **Shiny 앱 실행**
-```r
-# Shiny 앱 실행
-shiny::runApp("R/shiny_app")
-```
+## 📝 분석 결과 상세
 
-## 📈 주요 기능
-
-1. **생존 예측 모델**
-   - Cox 비례위험모델
-   - Random Forest
-   - XGBoost
-   - 앙상블 모델
-   - 모델 성능 평가
-
-2. **데이터 전처리**
-   - 결측치 처리
-   - 이상치 탐지 및 처리
-   - 데이터 변환
-   - 피처 엔지니어링
-
-3. **시각화 대시보드**
-   - Kaplan-Meier 생존곡선
-   - 위험비 Forest Plot
-   - Feature Importance
-   - ROC Curve
-   - 모델 성능 비교
-
-4. **AI 의료 상담**
-   - 환자별 맞춤 상담
-   - 생존율 해석
-   - 치료 권장사항
+자세한 분석 결과는 다음 문서에서 확인하실 수 있습니다:
+- [상세 분석 결과 보기](docs/survival_analysis_documentation.md)
+- [데이터 전처리 문서](docs/data_preparation_README.md)
 
 ## 📄 라이선스
 
-MIT License - see [LICENSE](LICENSE) for details
+MIT License - 자세한 내용은 [LICENSE](LICENSE) 파일을 참조하세요.
+
+## 📧 문의
+
+분석에 대한 문의사항이 있으시면 이슈를 등록해주세요.
 
 ## 📁 프로젝트 구조
 
