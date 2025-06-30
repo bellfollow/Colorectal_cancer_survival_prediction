@@ -10,8 +10,8 @@ library(broom)        # 모델 결과 정리를 위한 패키지
 
 # 데이터 로드 (상대 경로 사용)
 cat("데이터 로드 중...\n")
-eocrc_data <- read.csv("data/train_EOCRC.csv", fileEncoding = "UTF-8-BOM")
-locrc_data <- read.csv("data/train_LOCRC.csv", fileEncoding = "UTF-8-BOM")
+eocrc_data <- read.csv("data/1_train_EOCRC.csv", fileEncoding = "UTF-8-BOM")
+locrc_data <- read.csv("data/1_train_LOCRC.csv", fileEncoding = "UTF-8-BOM")
 
 # 생존 시간(일)을 연 단위로 변환 (선택사항)
 # eocrc_data$Survival.years <- eocrc_data$암진단후생존일수.Survival.period. / 365.25
@@ -78,14 +78,14 @@ perform_univariate_analysis <- function(data, group_name) {
   # p-value 기준으로 정렬
   results <- results[order(results$p_value), ]
   
-  # 유의한 변수만 필터링 (p < 0.05)
-  significant_results <- results[results$p_value < 0.05, ]
+  # 유의한 변수만 필터링 (p < 0.25)
+  significant_results <- results[results$p_value < 0.25, ]
   
   # 결과 출력
   cat("\n[전체 변수 분석 결과]\n")
   print(kable(results, digits = 3, format = "simple"))
   
-  cat("\n[유의미한 변수 (p < 0.05)]\n")
+  cat("\n[유의미한 변수 (p < 0.25)]\n")
   if (nrow(significant_results) > 0) {
     print(kable(significant_results, digits = 3, format = "simple"))
     
