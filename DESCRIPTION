@@ -7,7 +7,6 @@ Authors@R:
     person("Your", "Name", email = "your.email@example.com", role = c("aut", "cre"))
 Description: 대장암 환자의 생존 예측을 위한 AI 시스템으로, R 기반의 생존분석 모델과 로컬 LLM을 통합한 의료 상담 시스템을 제공합니다.
 License: MIT
-
 Imports:
     tidyverse,
     survival,
@@ -29,11 +28,9 @@ Imports:
     mice,
     httr,
     jsonlite
-
 Suggests:
     readxl,
     janitor,
     rms,
     h2o
-
 Encoding: UTF-8

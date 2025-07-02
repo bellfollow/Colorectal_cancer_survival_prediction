@@ -625,3 +625,9 @@ Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
 
 (3) 다중공선성 문제 없음
 - 모든 변수의 VIF가 1~1.01 수준으로, 다중공선성(변수 간 중복 설명력) 문제는 없음
+
+(4) forest plot 생성
+- EOCRC 
+![alt text](forest_plot_eocrc.png)
+- LOCRC
+![alt text](forest_plot_locrc.png)

@@ -8,6 +8,7 @@ library(survminer)    # 생존 분석 시각화
 library(knitr)        # 표 출력을 위한 패키지
 library(broom)        # 모델 결과 정리를 위한 패키지
 library(car)          # 다중공선성 검사
+library(cowplot)      # 플롯 조합을 위한 패키지
 
 # 데이터 로드 (상대 경로 사용)
 cat("데이터 로드 중...\n")
@@ -132,11 +133,101 @@ perform_multivariate_analysis <- function(data, group_name) {
   })
 }
 
+# 포리스트 플롯 생성 함수
+generate_forest_plot <- function(cox_results, title) {
+  if (is.null(cox_results)) return(NULL)
+  
+  # 결과 데이터 추출
+  plot_data <- cox_results$significant_results
+  
+  # 변수명 정리 (필요시 한글 변수명을 영어로 변환)
+  plot_data$Variable <- gsub("\\.", " ", plot_data$Variable)  # 점을 공백으로 변경
+  
+  # 포리스트 플롯 생성
+  forest_plot <- ggplot(plot_data, aes(x = HR, y = reorder(Variable, HR))) +
+    geom_point(size = 3, shape = 15) +  # 점 추가
+    geom_errorbarh(aes(xmin = CI_lower, xmax = CI_upper), height = 0.2) +  # 신뢰구간
+    geom_vline(xintercept = 1, linetype = "dashed", color = "red") +  # 참조선
+    scale_x_continuous(trans = "log10", 
+                     breaks = c(0.1, 0.2, 0.5, 1, 2, 5, 10),
+                     labels = c("0.1", "0.2", "0.5", "1.0", "2.0", "5.0", "10.0")) +  # 로그 스케일
+    labs(title = title,
+         x = "Hazard Ratio (95% CI)",
+         y = "") +
+    theme_minimal() +
+    theme(
+      plot.title = element_text(hjust = 0.5, size = 12, face = "bold"),
+      axis.text.y = element_text(size = 10),
+      axis.title.x = element_text(size = 10),
+      panel.grid.major.y = element_blank(),
+      panel.grid.minor.y = element_blank()
+    )
+  
+  # p-value 어노테이션 추가
+  plot_data$p_text <- ifelse(plot_data$p_value < 0.001, "p < 0.001", 
+                            paste0("p = ", format(round(plot_data$p_value, 3), nsmall = 3)))
+  
+  # HR(95% CI) 텍스트 추가
+  plot_data$hr_text <- sprintf("%.2f (%.2f-%.2f)", 
+                              plot_data$HR, 
+                              plot_data$CI_lower, 
+                              plot_data$CI_upper)
+  
+  # 텍스트 테이블 생성
+  text_table <- ggplot(plot_data, aes(y = reorder(Variable, HR))) +
+    geom_text(aes(label = hr_text), x = 0, hjust = 0, size = 3.5) +
+    geom_text(aes(label = p_text), x = 1, hjust = 0, size = 3.5) +
+    scale_x_continuous(limits = c(0, 1.5), 
+                     breaks = c(0, 1), 
+                     labels = c("HR (95% CI)", "p-value")) +
+    theme_void() +
+    theme(plot.margin = margin(0, 0, 0, 0, "cm"))
+  
+  # 플롯과 테이블 결합
+  combined_plot <- plot_grid(
+    forest_plot + 
+      theme(plot.margin = margin(0, 10, 0, 0, "pt")),
+    text_table,
+    nrow = 1,
+    rel_widths = c(1, 0.5)
+  )
+  
+  return(combined_plot)
+}
+
 # EOCRC 그룹 다변량 분석
 eocrc_mv_results <- perform_multivariate_analysis(eocrc_data, "EOCRC")
 
+# EOCRC 포리스트 플롯 생성 및 저장
+if (!is.null(eocrc_mv_results)) {
+  eocrc_forest_plot <- generate_forest_plot(eocrc_mv_results, 
+                                          "Forest Plot of Hazard Ratios (EOCRC Group)")
+  print(eocrc_forest_plot)
+  
+  # 파일로 저장
+  ggsave("results/forest_plot_eocrc.png", 
+         plot = eocrc_forest_plot, 
+         width = 10, 
+         height = 6, 
+         dpi = 300)
+}
+
 # LOCRC 그룹 다변량 분석
 locrc_mv_results <- perform_multivariate_analysis(locrc_data, "LOCRC")
+
+# LOCRC 포리스트 플롯 생성 및 저장
+if (!is.null(locrc_mv_results)) {
+  locrc_forest_plot <- generate_forest_plot(locrc_mv_results, 
+                                          "Forest Plot of Hazard Ratios (LOCRC Group)")
+  print(locrc_forest_plot)
+  
+  # 파일로 저장
+  ggsave("results/forest_plot_locrc.png", 
+         plot = locrc_forest_plot, 
+         width = 10, 
+         height = 6, 
+         dpi = 300)
+}
 
 # 다중공선성 검사 함수 (VIF 계산)
 check_multicollinearity <- function(model) {

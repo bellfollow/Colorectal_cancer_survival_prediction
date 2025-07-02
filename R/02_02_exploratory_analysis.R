@@ -115,6 +115,8 @@ perform_univariate_analysis <- function(data, group_name) {
 
 # EOCRC 그룹 분석
 eocrc_results <- perform_univariate_analysis(eocrc_data, "EOCRC")
+cat("\n\n유의미한 변수 (p < 0.25)\n")
 
 # LOCRC 그룹 분석
 locrc_results <- perform_univariate_analysis(locrc_data, "LOCRC")
+cat("\n\n유의미한 변수 (p < 0.25)\n")
