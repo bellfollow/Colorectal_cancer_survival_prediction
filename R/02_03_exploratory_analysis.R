@@ -15,24 +15,40 @@ cat("데이터 로드 중...\n")
 eocrc_data <- read.csv("data/1_train_EOCRC.csv", fileEncoding = "UTF-8-BOM")
 locrc_data <- read.csv("data/1_train_LOCRC.csv", fileEncoding = "UTF-8-BOM")
 
-# 각 그룹별로 유의한 변수 정의 (p < 0.25)
-eocrc_significant_vars <- c(
-  "조직학적진단명.코드.설명.signet.ring.cell.",
-  "조직학적진단명.코드.설명.Neoplasm.malignant.",
-  "체중측정값.Weight.",
-  "조직학적진단명.코드.설명.carcinoide.tumor.",
-  "항암제.치료.여부.Chemotherapy."
-)
+# 각 그룹별로 유의한 변수 불러오기 (p < 0.25)
+cat("유의한 변수 목록을 불러오는 중...\n")
 
-locrc_significant_vars <- c(
-  "체중측정값.Weight.",
-  "조직학적진단명.코드.설명.Neuroendocrine.carcinoma.",
-  "분자병리MSI검사결과코드.명.MSI.",
-  "조직학적진단명.코드.설명.carcinoide.tumor.",
-  "진단시연령.AGE.",
-  "M_stage",
-  "항암제.치료.여부.Chemotherapy."
-)
+tryCatch({
+  # EOCRC 유의한 변수 불러오기
+  if (file.exists("results/eocrc_significant_variables_p025.csv")) {
+    eocrc_significant_vars_df <- read.csv("results/eocrc_significant_variables_p025.csv", fileEncoding = "UTF-8")
+    eocrc_significant_vars <- eocrc_significant_vars_df$Variable
+    cat("EOCRC 그룹에서 ", length(eocrc_significant_vars), "개의 유의한 변수를 불러왔습니다.\n", sep="")
+  } else {
+    stop("EOCRC 유의 변수 파일을 찾을 수 없습니다. 먼저 02_02_exploratory_analysis.R을 실행해주세요.")
+  }
+  
+  # LOCRC 유의한 변수 불러오기
+  if (file.exists("results/locrc_significant_variables_p025.csv")) {
+    locrc_significant_vars_df <- read.csv("results/locrc_significant_variables_p025.csv", fileEncoding = "UTF-8")
+    locrc_significant_vars <- locrc_significant_vars_df$Variable
+    cat("LOCRC 그룹에서 ", length(locrc_significant_vars), "개의 유의한 변수를 불러왔습니다.\n", sep="")
+  } else {
+    stop("LOCRC 유의 변수 파일을 찾을 수 없습니다. 먼저 02_02_exploratory_analysis.R을 실행해주세요.")
+  }
+  
+  # 변수 목록 확인
+  cat("\n[EOCRC 유의 변수 목록]\n")
+  print(eocrc_significant_vars)
+  
+  cat("\n[LOCRC 유의 변수 목록]\n")
+  print(locrc_significant_vars)
+  
+}, error = function(e) {
+  cat("오류 발생:", conditionMessage(e), "\n")
+  cat("02_02_exploratory_analysis.R을 먼저 실행하여 유의 변수 목록을 생성해주세요.\n")
+  stop("유의 변수 로딩 실패")
+})
 
 # 다변량 Cox 회귀 분석 함수 정의
 perform_multivariate_analysis <- function(data, group_name) {
@@ -90,20 +106,33 @@ perform_multivariate_analysis <- function(data, group_name) {
     # 결과 정렬 (p-value 기준)
     results <- results[order(results$p_value), ]
     
-    # 결과 출력
-    cat("\n[다변량 분석 결과]\n")
-    print(kable(results, digits = 3, format = "simple"))
+    # 결과 요약 출력
+    cat("\n[다변량 분석 결과 요약]\n")
+    coef_summary <- summary(cox_model)$coefficients
+    print(kable(coef_summary, digits = 3))
     
-    # 유의한 변수 필터링 (p < 0.25)
-    significant_vars <- results$Variable[results$p_value < 0.25]
+    # 결과를 데이터프레임으로 변환
+    results_df <- as.data.frame(coef_summary) %>% 
+      rownames_to_column("Variable") %>% 
+      select(Variable, HR = `exp(coef)`, p_value = `Pr(>|z|)`)
     
-    if (length(significant_vars) > 0) {
-      cat("\n[유의미한 변수 (p < 0.25)]\n")
-      print(kable(results[results$p_value < 0.25, ], digits = 3, format = "simple"))
-      
-      # 유의한 변수만으로 모델 재적합
+    # p < 0.25인 유의한 변수 추출
+    significant_vars <- results_df %>% 
+      filter(p_value < 0.25) %>% 
+      arrange(p_value)
+    
+    # 결과 디렉토리 생성
+    if (!dir.exists("results")) dir.create("results", recursive = TRUE)
+    
+    # 유의한 변수 저장 (p < 0.25)
+    output_file <- paste0("results/", tolower(group_name), "_multivariate_significant_vars_p025.csv")
+    write.csv(significant_vars, output_file, row.names = FALSE, fileEncoding = "UTF-8")
+    cat("\n", group_name, "다변량 분석에서 유의한 변수 (p < 0.25)가 '", output_file, "'에 저장되었습니다.\n", sep="")
+    
+    # 유의한 변수만으로 모델 재적합
+    if (nrow(significant_vars) > 0) {
       formula_sig <- as.formula(paste("Surv(암진단후생존일수.Survival.period., 사망여부.Death.) ~", 
-                                     paste(significant_vars, collapse = " + ")))
+                                     paste(significant_vars$Variable, collapse = " + ")))
       sig_model <- coxph(formula_sig, data = analysis_data)
       
       # 모델 적합도 검정 (Likelihood ratio test)

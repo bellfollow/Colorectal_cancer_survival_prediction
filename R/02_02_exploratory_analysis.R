@@ -120,3 +120,45 @@ cat("\n\n유의미한 변수 (p < 0.25)\n")
 # LOCRC 그룹 분석
 locrc_results <- perform_univariate_analysis(locrc_data, "LOCRC")
 cat("\n\n유의미한 변수 (p < 0.25)\n")
+
+# 유의미한 변수(p < 0.05)를 CSV 파일로 저장
+# EOCRC 유의미한 변수 저장
+if (!is.null(eocrc_results$significant_results) && nrow(eocrc_results$significant_results) > 0) {
+  # p < 0.25인 유의한 변수 추출
+  eocrc_significant_025 <- eocrc_results$significant_results %>% 
+    filter(p_value < 0.25) %>% 
+    select(Variable, HR, p_value)
+  
+  # p < 0.05인 유의한 변수 추출
+  eocrc_significant_005 <- eocrc_results$significant_results %>% 
+    filter(p_value < 0.05) %>% 
+    select(Variable, HR, p_value)
+  
+  cat("\nEOCRC 유의한 변수 (p < 0.05):\n")
+  print(kable(eocrc_significant_005, digits = 3))
+  
+  # 유의한 변수 목록 저장 (p < 0.25)
+  if (!dir.exists("results")) dir.create("results", recursive = TRUE)
+  write.csv(eocrc_significant_025, "results/eocrc_significant_variables_p025.csv", row.names = FALSE, fileEncoding = "UTF-8")
+  cat("\nEOCRC 유의한 변수 (p < 0.25)가 'results/eocrc_significant_variables_p025.csv'에 저장되었습니다.\n")
+  
+}
+
+# LOCRC 유의한 변수 (p < 0.25) 출력 및 저장
+if (!is.null(locrc_results$significant_results) && nrow(locrc_results$significant_results) > 0) {
+  # p < 0.25인 유의한 변수 추출
+  locrc_significant_025 <- locrc_results$significant_results %>% 
+    filter(p_value < 0.25) %>% 
+    select(Variable, HR, p_value)
+  
+  cat("\nLOCRC 유의한 변수 (p < 0.25):\n")
+  print(kable(locrc_significant_025, digits = 3))
+  
+  # 유의한 변수 목록 저장 (p < 0.25)
+  if (!dir.exists("results")) dir.create("results", recursive = TRUE)
+  write.csv(locrc_significant_025, "results/locrc_significant_variables_p025.csv", row.names = FALSE, fileEncoding = "UTF-8")
+  cat("\nLOCRC 유의한 변수 (p < 0.25)가 'results/locrc_significant_variables_p025.csv'에 저장되었습니다.\n")
+  
+} else {
+  cat("\nLOCRC에서 유의한 변수가 없습니다.\n")
+}

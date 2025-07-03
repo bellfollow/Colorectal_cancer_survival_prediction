@@ -631,3 +631,90 @@ Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
 ![alt text](forest_plot_eocrc.png)
 - LOCRC
 ![alt text](forest_plot_locrc.png)
+
+# 03_survival_modeling.R 코드 구현
+논문 요구 사항	03 코드 구현 여부
+EOCRC/LOCRC 그룹별 분석 및 데이터 분리	O (각 그룹별로 데이터 분리 및 분석)
+다변량 Cox 회귀분석 (유의 변수만 활용)	O (02_03 결과에서 유의 변수만 사용)
+변수명 표준화 및 데이터 전처리	O (표준화 함수로 일관성 확보)
+Cox 모델 적합 및 Harrell’s C-index 산출	O (각 그룹별로 모델 적합 및 C-index 출력)
+Kaplan-Meier 생존곡선 및 위험군 분류	O (KM 곡선, 위험군 분류 및 시각화)
+위험군별 생존곡선, log-rank test	O (위험군별 KM 곡선, log-rank test)
+테스트셋에서 Concordance, ROC/AUC, 정확도 등 평가	O (테스트셋 예측, C-index, ROC, 정확도)
+변수 중요도(계수 기반) 시각화	O (계수 기반 변수 중요도 플롯)
+
+## 분석 결과
+> print(eocrc_vars)
+[1] "조직학적진단명.코드.설명.signet.ring.cell."
+[2] "체중측정값.Weight."
+[3] "조직학적진단명.코드.설명.Neoplasm.malignant."
+[4] "항암제.치료.여부.Chemotherapy."
+[5] "조직학적진단명.코드.설명.carcinoide.tumor."
+> print(locrc_vars)
+[1] "체중측정값.Weight."
+[2] "조직학적진단명.코드.설명.Neuroendocrine.carcinoma."
+[3] "분자병리MSI검사결과코드.명
+[4] "진단시연령.AGE."
+[5] "조직학적진단명.코드.설명.carcinoide.tumor."
+[6] "M_stage"
+[7] "항암제.치료.여부.Chemotherapy."
+
+- 헤당 출력 결과는 02_03의 출력 결과를 토대로 진행
+- 코드를 진행하며 각 부분에서 결과치를 가져오는 방법을 하는것이 좋아보여 results 폴더를 만들어 값을 전달시킴 M_stage_M1은 바꿀 방도가 보이질 않아 값을 전달받으면 TNM 병기에 해당하는 부분들은 모두 원 데이터의 이름으로 바꾸도록 조치함
+
+## 결과
+### EOCRC 생존분석 결과
+![alt text](image-1.png)
+### LOCRC 생존분석 결과
+![alt text](image-2.png)
+
+### EOCRC Log Lank test 결과
+![alt text](image-5.png)
+### LOCRC Log Lank test 결과
+![alt text](image-6.png)
+
+### 1년 생존 예측 EOCRC
+- 0.526
+![alt text](image-7.png)
+
+[테스트셋 평가 - EOCRC]
+
+[위험 점수 요약]
+   Min. 1st Qu.  Median    Mean 3rd Qu.    Max.
+ 0.6885  0.9648  1.0751  1.1052  1.2249  1.9263
+
+[Concordance Index]
+Call:
+concordance.formula(object = test_surv_obj ~ test_risk_scores)
+
+n= 1869
+Concordance= 0.5011 se= 0.01181
+concordant discordant     tied.x     tied.y    tied.xy
+    350190     348704        293       1744          2
+
+[1년 생존 예측 정확도] 0.526 
+
+### 1년 생존 예측 LOCRC
+- 0.58
+![alt text](image-8.png)
+[테스트셋 평가 - LOCRC]
+
+[위험 점수 요약]
+   Min. 1st Qu.  Median    Mean 3rd Qu.    Max.
+ 0.8282  1.0744  1.1716  1.1919  1.2900  1.8288
+
+[Concordance Index]
+Call:
+concordance.formula(object = test_surv_obj ~ test_risk_scores)
+
+n= 3063
+Concordance= 0.4984 se= 0.009956
+concordant discordant     tied.x     tied.y    tied.xy
+    874599     880163          5       3626          0
+
+[1년 생존 예측 정확도] 0.58 
+
+### EOCRC 변수 중요도
+![alt text](image-3.png)
+### LOCRC 변수 중요도
+![alt text](image-4.png)
