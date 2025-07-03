@@ -718,3 +718,8 @@ concordant discordant     tied.x     tied.y    tied.xy
 ![alt text](image-3.png)
 ### LOCRC 변수 중요도
 ![alt text](image-4.png)
+
+
+## 03 코드의 결론
+- 논문에서는 머신러닝 모델(GB, XGB, RF) 기준 1년 예측 AUC가 0.88(EOCRC), 0.857(LOCRC), 정확도 0.842/0.803 등으로 매우 높음13.
+- 반면, 현재 Cox 모델 기반 03 코드의 성능은 Concordance Index가 0.5 수준(랜덤과 유사), 1년 생존 예측 정확도도 0.53~0.58로 낮음.
