@@ -723,3 +723,493 @@ concordant discordant     tied.x     tied.y    tied.xy
 ## 03 코드의 결론
 - 논문에서는 머신러닝 모델(GB, XGB, RF) 기준 1년 예측 AUC가 0.88(EOCRC), 0.857(LOCRC), 정확도 0.842/0.803 등으로 매우 높음13.
 - 반면, 현재 Cox 모델 기반 03 코드의 성능은 Concordance Index가 0.5 수준(랜덤과 유사), 1년 생존 예측 정확도도 0.53~0.58로 낮음.
+
+
+# 04 머신러닝 모델링
+
+## 04_01_ml_models.R
+- 논문에서 다변량 변수의 유의미한 변수를 가져다 쓰는걸로 한다.
+- p < 0.25 기준으로 간다
+
+- 데이터 불균형 정도
+```
+[클래스 분포 확인 - EOCRC 훈련 데이터 ]
+
+1년 생존 여부:
+
+   0    1 <NA>
+ 244 1738 1197
+사망:생존 비율 = 1:0.14
+
+3년 생존 여부:
+
+   0    1 <NA>
+ 457  521 2201
+사망:생존 비율 = 1:0.88
+
+5년 생존 여부:
+
+   0 <NA>
+ 557 2622
+사망:생존 비율 = 1:0.21
+> check_class_balance(locrc_data$train, "LOCRC 훈련 데이터")
+
+[클래스 분포 확인 - LOCRC 훈련 데이터 ]
+
+1년 생존 여부:
+
+   0    1 <NA>
+ 575 3647 2493
+사망:생존 비율 = 1:0.16
+
+3년 생존 여부:
+
+   0    1 <NA> 
+1025 1085 4605
+사망:생존 비율 = 1:0.94
+
+5년 생존 여부:
+
+   0 <NA>
+1211 5504
+사망:생존 비율 = 1:0.22
+```
+- 사망 생존 비율이 망가져 있음 데이터셋 변경 요망망
+
+
+### SMOTE 적용 결과 요약
+```
+--- SMOTE 적용 검토: EOCRC, survived_1yr ---
+정제된 데이터의 클래스 분포:
+
+0 1
+244 1738
+클래스 비율 (다수/소수): 7.12
+클래스 불균형이 심각하여 (비율 >= 5) SMOTE를 적용합니다.
+소수 클래스 샘플이 너무 적어 SMOTE를 건너<binary data, 1 bytes>니다.
+
+--- SMOTE 적용 검토: LOCRC, survived_1yr ---
+정제된 데이터의 클래스 분포:
+
+0 1
+575 3647
+클래스 비율 (다수/소수): 6.34
+클래스 불균형이 심각하여 (비율 >= 5) SMOTE를 적용합니다.
+소수 클래스 샘플이 너무 적어 SMOTE를 건너<binary data, 1 bytes>니다.
+
+--- SMOTE 적용 검토: EOCRC, survived_3yr ---
+정제된 데이터의 클래스 분포:
+
+0 1
+457 521
+클래스 비율 (다수/소수): 1.14
+클래스 불균형이 심각하지 않아 SMOTE를 적용하지 않습니다.
+
+--- SMOTE 적용 검토: LOCRC, survived_3yr ---
+정제된 데이터의 클래스 분포:
+
+0 1
+1025 1085
+클래스 비율 (다수/소수): 1.06
+클래스 불균형이 심각하지 않아 SMOTE를 적용하지 않습니다.
+
+--- SMOTE 적용 검토: EOCRC, survived_5yr ---
+정제된 데이터의 클래스 분포:
+
+0
+557
+클래스가 하나뿐이라 SMOTE를 건너<binary data, 1 bytes>니다.
+
+--- SMOTE 적용 검토: LOCRC, survived_5yr ---
+정제된 데이터의 클래스 분포:
+
+0
+1211
+```
+
+#### 1년 생존 예측 (survived_1yr)
+##### EOCRC
+- 클래스 분포: 0(사망) 244명, 1(생존) 1738명
+- 클래스 비율: 7.12 (불균형 심각, SMOTE 적용 시도)
+- SMOTE 미적용: 소수 클래스(사망) 샘플이 너무 적어 SMOTE를 실제로 적용하지 않음
+##### LOCRC
+- 클래스 분포: 0(사망) 575명, 1(생존) 3647명
+- 클래스 비율: 6.34 (불균형 심각, SMOTE 적용 시도)
+- SMOTE 미적용: 소수 클래스(사망) 샘플이 너무 적어 SMOTE를 실제로 적용하지 않음
+#### 3년 생존 예측 (survived_3yr)
+- EOCRC: 0(사망) 457, 1(생존) 521, 비율 1.14 → SMOTE 미적용(불균형 아님)
+- LOCRC: 0(사망) 1025, 1(생존) 1085, 비율 1.06 → SMOTE 미적용(불균형 아님)
+
+#### 5년 생존 예측 (survived_5yr)
+- EOCRC: 0(사망) 557, 1 없음(클래스 하나뿐)
+- LOCRC: 0(사망) 1211, 1 없음(클래스 하나뿐)
+- SMOTE 미적용: 클래스가 하나뿐이라 모델링 자체가 불가
+
+## 결과
+```
+--- RSF 모델링 시작: EOCRC ---
+RSF 모델 학습 완료
+                         Sample size: 3179
+                    Number of deaths: 557
+                     Number of trees: 1000
+           Forest terminal node size: 15
+       Average no. of terminal nodes: 144.449
+No. of variables tried at each split: 3
+              Total no. of variables: 5
+       Resampling used to grow trees: swor
+    Resample size used to grow trees: 2009
+                            Analysis: RSF
+                              Family: surv
+                      Splitting rule: logrank *random*
+       Number of random split points: 10
+                          (OOB) CRPS: 324.6104369
+                   (OOB) stand. CRPS: 0.17786873
+   (OOB) Requested performance error: 0.50068641
+
+
+테스트셋 C-index: 0.500
+```
+
+```
+
+--- RSF 모델링 시작: LOCRC ---
+RSF 모델 학습 완료
+                         Sample size: 6715
+                    Number of deaths: 1211
+                     Number of trees: 1000
+           Forest terminal node size: 15
+       Average no. of terminal nodes: 285.627
+No. of variables tried at each split: 3
+              Total no. of variables: 7
+       Resampling used to grow trees: swor
+    Resample size used to grow trees: 4244
+                            Analysis: RSF
+                              Family: surv
+                      Splitting rule: logrank *random*
+       Number of random split points: 10
+                          (OOB) CRPS: 309.47118766
+                   (OOB) stand. CRPS: 0.16957325
+   (OOB) Requested performance error: 0.49742782
+
+
+테스트셋 C-index: 0.495
+```
+
+- **C-index(Concordance Index)**는 생존모델의 예측력이 얼마나 우수한지 나타내는 대표적 지표입니다.
+- 0.5: 무작위 예측(동전 던지기와 동일)
+- 1.0: 완벽한 예측
+- 0.6~0.7: 임상 예측모델에서 의미 있는 수준
+
+```EOCRC: 0.500, LOCRC: 0.495```
+- 두 그룹 모두 0.5 내외로, 무작위 예측과 동일한 수준입니다. 즉, 모델이 환자의 생존순서를 실제와 맞게 예측할 확률이 50%로, 임상적으로 의미 있는 예측력을 보이지 않습니다.
+
+
+
+## 분류 모델링 결과
+```
+
+--- RF 모델링 시작: EOCRC, survived_1yr ---
+
+Confusion Matrix:
+Confusion Matrix and Statistics
+
+          Reference
+Prediction  X0  X1
+        X0  14  52
+        X1 313 979
+
+               Accuracy : 0.7312
+                 95% CI : (0.7068, 0.7546)
+    No Information Rate : 0.7592
+    P-Value [Acc > NIR] : 0.9922
+
+                  Kappa : -0.0105
+
+ Mcnemar's Test P-Value : <2e-16
+
+            Sensitivity : 0.04281
+            Specificity : 0.94956
+         Pos Pred Value : 0.21212
+         Neg Pred Value : 0.75774
+             Prevalence : 0.24080
+         Detection Rate : 0.01031
+   Detection Prevalence : 0.04860
+      Balanced Accuracy : 0.49619
+
+       'Positive' Class : X0
+
+Setting levels: control = X0, case = X1
+Setting direction: controls > cases
+
+Test Set AUC: 0.527
+
+--- RF 모델링 시작: LOCRC, survived_1yr ---
+
+Confusion Matrix:
+Confusion Matrix and Statistics
+
+          Reference
+Prediction   X0   X1
+        X0    0    0
+        X1  538 1647
+
+               Accuracy : 0.7538
+                 95% CI : (0.7352, 0.7717)
+    No Information Rate : 0.7538
+    P-Value [Acc > NIR] : 0.5116
+
+                  Kappa : 0
+
+ Mcnemar's Test P-Value : <2e-16
+
+            Sensitivity : 0.0000
+            Specificity : 1.0000
+         Pos Pred Value :    NaN
+         Neg Pred Value : 0.7538
+             Prevalence : 0.2462
+         Detection Rate : 0.0000
+   Detection Prevalence : 0.0000
+      Balanced Accuracy : 0.5000
+
+       'Positive' Class : X0
+
+Setting levels: control = X0, case = X1
+Setting direction: controls > cases
+
+Test Set AUC: 0.516
+
+--- RF 모델링 시작: EOCRC, survived_3yr ---
+
+Confusion Matrix:
+Confusion Matrix and Statistics
+
+          Reference
+Prediction  X0  X1
+        X0 180  82
+        X1 464 217
+
+               Accuracy : 0.421
+                 95% CI : (0.3892, 0.4532)
+    No Information Rate : 0.6829
+    P-Value [Acc > NIR] : 1
+
+                  Kappa : 0.0039
+
+ Mcnemar's Test P-Value : <2e-16
+
+            Sensitivity : 0.2795
+            Specificity : 0.7258
+         Pos Pred Value : 0.6870
+         Neg Pred Value : 0.3186
+             Prevalence : 0.6829
+         Detection Rate : 0.1909
+   Detection Prevalence : 0.2778
+      Balanced Accuracy : 0.5026
+
+       'Positive' Class : X0
+
+Setting levels: control = X0, case = X1
+Setting direction: controls < cases
+
+Test Set AUC: 0.515
+
+--- RF 모델링 시작: LOCRC, survived_3yr ---
+
+Confusion Matrix:
+Confusion Matrix and Statistics
+
+          Reference
+Prediction  X0  X1
+        X0 409 213
+        X1 537 294
+
+               Accuracy : 0.4838
+                 95% CI : (0.4578, 0.5099)
+    No Information Rate : 0.6511
+    P-Value [Acc > NIR] : 1
+
+                  Kappa : 0.0106
+
+ Mcnemar's Test P-Value : <2e-16
+
+            Sensitivity : 0.4323
+            Specificity : 0.5799
+         Pos Pred Value : 0.6576
+         Neg Pred Value : 0.3538
+             Prevalence : 0.6511
+         Detection Rate : 0.2815
+   Detection Prevalence : 0.4281
+      Balanced Accuracy : 0.5061
+
+       'Positive' Class : X0
+
+Setting levels: control = X0, case = X1
+Setting direction: controls < cases
+
+Test Set AUC: 0.501
+
+--- RF 모델링 시작: EOCRC, survived_5yr ---
+훈련 데이터에 클래스가 하나뿐이라 모델링을 건너<binary data, 1 bytes>니다.
+
+--- RF 모델링 시작: LOCRC, survived_5yr ---
+훈련 데이터에 클래스가 하나뿐이라 모델링을 건너<binary data, 1 bytes>니다.
+```
+
+- Kappa가 0 또는 음수: 모델이 실제 분류와 거의 무관하게 예측하고 있음을 의미합니다.
+- 민감도(사망 예측력)가 0에 가까움: 사망 환자를 거의 예측하지 못함.
+- Balanced Accuracy가 0.5 내외: 무작위 예측과 동일.
+
+- 클래스 불균형: 사망 환자가 극히 적어, 모델이 "생존"만 예측해도 높은 정확도가 나옴(실제 예측력 없음).
+- 데이터셋 한계: 5년 데이터 등에서는 한쪽 클래스(사망/생존)만 존재해 모델링 자체가 불가능.
+- 입력 변수의 예측력 부족: 임상적 변수들이 실제 생존/사망을 잘 설명하지 못함.
+- SMOTE 등 불균형 보정 효과 한계: 샘플 자체가 적거나, 변수 신호가 약하면 SMOTE도 효과 없음.
+
+### GBM/XGBoost 모델링 결과
+```
+
+Confusion Matrix:
+Confusion Matrix and Statistics
+
+          Reference
+Prediction   X0   X1
+        X0    0    0
+        X1  327 1031
+
+               Accuracy : 0.7592
+                 95% CI : (0.7355, 0.7817)
+    No Information Rate : 0.7592
+    P-Value [Acc > NIR] : 0.5148
+
+                  Kappa : 0
+
+ Mcnemar's Test P-Value : <2e-16
+
+            Sensitivity : 0.0000
+            Specificity : 1.0000
+         Pos Pred Value :    NaN
+         Neg Pred Value : 0.7592
+             Prevalence : 0.2408
+         Detection Rate : 0.0000
+   Detection Prevalence : 0.0000
+      Balanced Accuracy : 0.5000
+
+       'Positive' Class : X0
+
+Setting levels: control = X0, case = X1
+Setting direction: controls < cases
+
+Test Set AUC: 0.519
+
+--- XGBTREE 모델링 시작: LOCRC, survived_1yr ---
+Confusion Matrix:
+Confusion Matrix and Statistics
+
+          Reference
+Prediction   X0   X1
+        X0    0    0
+        X1  538 1647
+
+               Accuracy : 0.7538
+                 95% CI : (0.7352, 0.7717)
+    No Information Rate : 0.7538
+    P-Value [Acc > NIR] : 0.5116
+
+                  Kappa : 0
+
+ Mcnemar's Test P-Value : <2e-16
+
+            Sensitivity : 0.0000
+            Specificity : 1.0000
+         Pos Pred Value :    NaN
+         Neg Pred Value : 0.7538
+             Prevalence : 0.2462
+         Detection Rate : 0.0000
+   Detection Prevalence : 0.0000
+      Balanced Accuracy : 0.5000
+
+       'Positive' Class : X0
+
+Setting levels: control = X0, case = X1
+Setting direction: controls > cases
+
+Test Set AUC: 0.511
+
+--- XGBTREE 모델링 시작: EOCRC, survived_3yr ---
+
+Confusion Matrix:
+Confusion Matrix and Statistics
+
+          Reference
+Prediction  X0  X1
+        X0 234 126
+        X1 410 173
+
+               Accuracy : 0.4316
+                 95% CI : (0.3997, 0.4639)
+    No Information Rate : 0.6829
+    P-Value [Acc > NIR] : 1
+
+                  Kappa : -0.0463
+
+ Mcnemar's Test P-Value : <2e-16
+
+            Sensitivity : 0.3634
+            Specificity : 0.5786
+         Pos Pred Value : 0.6500
+         Neg Pred Value : 0.2967
+             Prevalence : 0.6829
+         Detection Rate : 0.2481
+   Detection Prevalence : 0.3818
+      Balanced Accuracy : 0.4710
+
+       'Positive' Class : X0
+
+Setting levels: control = X0, case = X1
+Setting direction: controls > cases
+
+Test Set AUC: 0.525
+
+--- XGBTREE 모델링 시작: LOCRC, survived_3yr ---
+
+Confusion Matrix:
+Confusion Matrix and Statistics
+
+          Reference
+Prediction  X0  X1
+        X0 505 265
+        X1 441 242
+
+               Accuracy : 0.5141
+                 95% CI : (0.4881, 0.5401)
+    No Information Rate : 0.6511
+    P-Value [Acc > NIR] : 1
+
+                  Kappa : 0.0103
+
+ Mcnemar's Test P-Value : 4.512e-11
+
+            Sensitivity : 0.5338
+            Specificity : 0.4773
+         Pos Pred Value : 0.6558
+         Neg Pred Value : 0.3543
+             Prevalence : 0.6511
+         Detection Rate : 0.3476
+   Detection Prevalence : 0.5299
+      Balanced Accuracy : 0.5056
+
+       'Positive' Class : X0
+
+Setting levels: control = X0, case = X1
+Setting direction: controls < cases
+
+Test Set AUC: 0.505
+
+--- GBM 모델링 시작: EOCRC, survived_5yr ---
+훈련 데이터에 클래스가 하나뿐이라 모델링을 건너<binary data, 1 bytes>니다.
+
+--- GBM 모델링 시작: LOCRC, survived_5yr ---
+훈련 데이터에 클래스가 하나뿐이라 모델링을 건너<binary data, 1 bytes>니다.
+```
+
+- 쉽지 않다 이제 어떤 것을 해야할까
+- 데이터셋을 넣으면 해당 데이터셋의 특성을 파악해 어떤 식의 결과를 내야하는지에 대한 서비스를 만드는게 나을까

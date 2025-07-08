@@ -442,3 +442,6 @@ cat("\n=== 데이터 기본 정보 ===\n")
 cat("데이터 차원:", dim(EOCRC_tr_data), "\n")
 cat("변수명:\n")
 print(names(EOCRC_tr_data))
+
+
+
