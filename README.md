@@ -2,23 +2,10 @@
 
 [![GitHub license](https://img.shields.io/github/license/bellfollow/Colorectal_cancer_survival_prediction)](https://github.com/bellfollow/Colorectal_cancer_survival_prediction/blob/main/LICENSE)
 
-## 🎯 프로젝트 개요
+## 프로젝트 개요
 
 대장암 환자의 생존 예측을 위한 분석 시스템으로, 조기발병 대장암(EOCRC)과 만기발병 대장암(LOCRC) 그룹별로 생존 예측 모델을 개발했습니다. R을 사용한 생존 분석과 다변량 분석을 통해 주요 예후 인자를 규명하고, 모델 성능을 평가했습니다.
 
-## 📊 분석 결과 요약
-
-### 주요 발견사항
-
-#### EOCRC (Early-Onset Colorectal Cancer)
-- **유의한 예후인자**: 
-  - 시그넷링세포암 (p=0.042, HR=1.27)
-- **모델 성능**: C-index = 0.551
-
-#### LOCRC (Late-Onset Colorectal Cancer)
-- **유의한 예후인자**:
-  - 체중 (p=0.037, HR=1.004)
-- **모델 성능**: C-index = 0.536
 
 ### 데이터셋 정보
 
@@ -130,35 +117,21 @@ MIT License - 자세한 내용은 [LICENSE](LICENSE) 파일을 참조하세요.
 ```
 Colorectal_cancer_survival_prediction/
 ├── README.md
-├── R/
-│   ├── 01_data_preparation.R
-│   ├── 02_exploratory_analysis.R
-│   ├── 03_survival_modeling.R
-│   ├── 04_ml_models.R
-│   ├── 05_model_evaluation.R
-│   └── shiny_app/
-│       ├── ui.R
-│       ├── server.R
-│       ├── global.R
-│       └── llm_functions.R
-├── pre_process/
-│   ├── preprocess_data.R
-│   ├── data_cleaning.R
-│   ├── feature_engineering.R
-│   └── data_validation.R
-├── data/
+├── R/                           # R 분석 스크립트
+│   ├── 01_data_preparation.R     # 데이터 전처리
+│   ├── 02_exploratory_analysis.R # 탐색적 데이터 분석
+│   ├── 03_survival_modeling.R    # 생존분석 모델링
+│   ├── 04_ml_models.R           # 머신러닝 모델
+│   └── install_packages.R    # 패키지 설치 
+|
+├── data/                        # 원시 데이터 및 전처리된 데이터
+├── docs/                        # 각 R 스크립트 문서화 파일들
+├── results/                     # 분석 결과물
+├── renv/                        # 패키지 의존성 관리
+└── .RData                       # R 세션 데이터
 │   └── 암임상 라이브러리 합성데이터 train test set(대장암).xlsx
-├── models/
-├── plots/
-├── .Rprofile
-├── .Rbuildignore
-├── .RData
-├── .Rhistory
-├── .Rproj.user
-├── DESCRIPTION
-├── renv/
 ├── renv.lock
-└── 암환자_생존율예측.Rproj
+
 ```
 
 ### 각 디렉토리의 목적
@@ -168,31 +141,44 @@ Colorectal_cancer_survival_prediction/
   - `02_exploratory_analysis.R`: 탐색적 데이터 분석
   - `03_survival_modeling.R`: 생존분석 모델링
   - `04_ml_models.R`: 머신러닝 모델
-  - `05_model_evaluation.R`: 모델 평가
-  - `shiny_app/`: Shiny 웹 애플리케이션
 
-- `pre_process/`: 데이터 전처리 관련 스크립트
-  - `preprocess_data.R`: 데이터 전처리 주 프로세스
-  - `data_cleaning.R`: 데이터 정제
-  - `feature_engineering.R`: 피처 엔지니어링
-  - `data_validation.R`: 데이터 검증
 
 - `data/`: 원시 데이터 및 전처리된 데이터
-- `models/`: 학습된 모델 저장
-- `plots/`: 생성된 시각화 파일
 - `renv/`: 패키지 의존성 관리
-- `DESCRIPTION`: R 패키지 설명 파일
-- `.Rprofile`: R 프로젝트 설정
-- `.Rbuildignore`: 빌드 시 무시할 파일 설정
 - `.RData`: R 세션 데이터
-- `.Rhistory`: R 명령어 이력
-- `.Rproj.user`: RStudio 프로젝트 설정
 - `renv.lock`: 패키지 의존성 버전 정보
-- `암환자_생존율예측.Rproj`: RStudio 프로젝트 파일
 
-## 📝 관련 문서
+## 📊 분석 방법론
+
+### 데이터 전처리
+- 50세 이전 암진단 환자는 EOCRC(Early-Onset Colorectal Cancer), 50세 이후는 LOCRC(Late-Onset Colorectal Cancer)로 분류 (비율 3:7)
+- 18세 이상 환자만 분석에 포함
+- 결측치 처리: 다중대치법 적용
+- 불필요 변수 제거: 모두 0인 병기 관련 변수 4개 삭제
+
+### 분석 기법
+1. **단변량 분석**
+   - 각 임상 변수와 생존(사망여부와 생존기간) 간의 상관 관계 분석
+   - Cox 비례 위험 모델을 사용한 생존 분석
+
+2. **다변량 분석**
+   - 유의미한 변수들을 결합한 종합적인 생존 분석 모델 구축
+   - 변수 선택: 단변량 분석 결과와 기존 문헌 고려
+
+## 📈 주요 분석 결과
+
+### EOCRC 그룹
+- **유의미한 변수 (p < 0.05)**:
+  - 조직학적 진단명 (signet ring cell)
+
+### LOCRC 그룹
+- **유의미한 변수 (p < 0.05)**:
+  - 체중 측정값
+
+## 📚 관련 문서
 
 - [대장암 합성 데이터셋 정보.md](대장암%20합성%20데이터셋%20정보.md): 데이터셋 상세 설명
 - [process.md](process.md): 프로젝트 프로세스 설명
 - [prob_solv.md](prob_solv.md): 문제 해결 과정 설명
 - [asd.md](asd.md): 추가 설명 문서
+- [just_st.md](just_st.md): 상세 분석 방법 및 결과
